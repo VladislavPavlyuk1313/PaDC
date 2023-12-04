@@ -100,7 +100,7 @@ public class Lab6 {
             generalEndTime = System.currentTimeMillis();
             generalComputationTime = generalEndTime - generalStartTime;
 
-            DataService.writeResults(1, matrixA, vectorE, generalComputationTime, matrixComputationTime, vectorComputationTime);
+            DataService.writeResults(6, matrixA, vectorE, generalComputationTime, matrixComputationTime, vectorComputationTime);
 
         } catch (InterruptedException e) {
             e.printStackTrace();
