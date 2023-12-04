@@ -4,14 +4,19 @@ import services.AppConfig;
 import services.DataService;
 
 import java.io.IOException;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 public class Lab6 {
-    static Vector vectorB, vectorC, vectorE, firstVectorOperandResult, secondVectorOperandResult;
-    static Matrix matrixD, matrixT, matrixZ, matrixB, matrixA, firstMatrixOperandResult, secondMatrixOperandResult;
+    static Vector vectorB, vectorC;
+    static Matrix matrixD, matrixT, matrixZ, matrixB;
     static double a;
     static long generalStartTime, matrixStartTime, vectorStartTime, generalEndTime, matrixEndTime, vectorEndTime,
             generalComputationTime, matrixComputationTime, vectorComputationTime;
-
+    static BlockingQueue<Matrix> secondMatrixOperandResultQueue = new ArrayBlockingQueue<Matrix>(1);
+    static BlockingQueue<Vector> secondVectorOperandResultQueue = new ArrayBlockingQueue<Vector>(1);
+    static BlockingQueue<Matrix> matrixAQueue = new ArrayBlockingQueue<Matrix>(1);
+    static BlockingQueue<Vector> vectorEQueue = new ArrayBlockingQueue<Vector>(1);
     static Thread matrixThread1 = new Thread(new Runnable() {
         @Override
         public void run() {
@@ -19,7 +24,7 @@ public class Lab6 {
             matrixStartTime = System.currentTimeMillis();
             matrixThread2.start();
 
-            firstMatrixOperandResult = matrixD
+            Matrix firstMatrixOperandResult = matrixD
                     .multiply(
                             vectorB
                                     .add(vectorC)
@@ -28,8 +33,8 @@ public class Lab6 {
                     .multiply(matrixT);
 
             try {
-                matrixThread2.join();
-                matrixA = firstMatrixOperandResult.add(secondMatrixOperandResult);
+                Matrix secondMatrixOperandResult = secondMatrixOperandResultQueue.take();
+                matrixAQueue.put(firstMatrixOperandResult.add(secondMatrixOperandResult));
 
                 matrixEndTime = System.currentTimeMillis();
                 matrixComputationTime = matrixEndTime - matrixStartTime;
@@ -42,7 +47,11 @@ public class Lab6 {
     static Thread matrixThread2 = new Thread(new Runnable() {
         @Override
         public void run() {
-            secondMatrixOperandResult = matrixZ.multiply(matrixB);
+            try {
+                secondMatrixOperandResultQueue.put(matrixZ.multiply(matrixB));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     });
 
@@ -53,11 +62,11 @@ public class Lab6 {
 
             vectorThread2.start();
 
-            firstVectorOperandResult = vectorB.multiply(matrixD);
+            Vector firstVectorOperandResult = vectorB.multiply(matrixD);
 
             try {
-                vectorThread2.join();
-                vectorE = firstVectorOperandResult.add(secondVectorOperandResult);
+                Vector secondVectorOperandResult = secondVectorOperandResultQueue.take();
+                vectorEQueue.put(firstVectorOperandResult.add(secondVectorOperandResult));
 
                 vectorEndTime = System.currentTimeMillis();
                 vectorComputationTime = vectorEndTime - vectorStartTime;
@@ -71,7 +80,11 @@ public class Lab6 {
     static Thread vectorThread2 = new Thread(new Runnable() {
         @Override
         public void run() {
-            secondVectorOperandResult = vectorC.multiply(matrixT).multiply(a);
+            try {
+                secondVectorOperandResultQueue.put(vectorC.multiply(matrixT).multiply(a));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     });
 
@@ -94,8 +107,8 @@ public class Lab6 {
         vectorThread1.start();
 
         try {
-            matrixThread1.join();
-            vectorThread1.join();
+            Matrix matrixA = matrixAQueue.take();
+            Vector vectorE = vectorEQueue.take();
 
             generalEndTime = System.currentTimeMillis();
             generalComputationTime = generalEndTime - generalStartTime;
